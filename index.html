@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="html5slider.js"></script>
+    </head>
+<body>
+
+<canvas style="cursor: pointer" id="myCanvas" width="800" height="600" style="border:1px solid #c3c3c3;">
+Your browser does not support the HTML5 canvas tag.
+</canvas>
+<p>Controllers:</p>
+<p>
+Number of field lines:<br/>
+<input id="nFieldLines" type="range" min="0" max="100" onchange="controllersChanged(event)" value=10>
+</p>
+<p>
+Initial charge for new particles:<br/>
+<input id="initialCharge" type="range" min="0" max="100" onchange="controllersChanged(event)" value=10>
+</p>
+<p>
+Step length:<br/>
+<input id="stepLength" type="range" min="0" max="100" onchange="controllersChanged(event)" value=50>
+</p>
+<p>
+Number of steps:<br/>
+<input id="nSteps" type="range" min="0" max="100" onchange="controllersChanged(event)" value=10>
+</p>
+
+<script type="text/javascript">
+
+// CONSTANTS
+var minStepLength = 0.005;
+var maxStepLength = 0.05;
+
+var minNSteps = 1;
+var maxNSteps = 10000;
+
+var minNFieldLines = 6;
+var maxNFieldLines = 20;
+
+var minInitialCharge = -2;
+var maxInitialCharge = 2;
+// END CONSTANTS
+
+var needsRedraw = false;
+var particles = [];
+var stepLength = 0.02;
+var nSteps = 10;
+var nFieldLines = 12;
+var initialCharge = 1.0;
+
+function initialize() {
+    particles[0] = {
+        position: [200,200],
+        charge: 1
+    }
+    particles[1] = {
+        position: [400,200],
+        charge: 1
+    }
+    particles[2] = {
+        position: [200,400],
+        charge: 1
+    }
+    controllersChanged(0);
+}
+
+function controllersChanged(event) {
+    stepLength = minStepLength + document.getElementById('stepLength').value / 100 * (maxStepLength - minStepLength);
+    nSteps = minNSteps + document.getElementById('nSteps').value / 100 * (maxNSteps - minNSteps);
+    nFieldLines = minNFieldLines + document.getElementById('nFieldLines').value / 100 * (maxNFieldLines - minNFieldLines);
+    initialCharge = minInitialCharge + document.getElementById('initialCharge').value / 100 * (maxInitialCharge - minInitialCharge);
+    //drawFieldLines();
+    redraw();
+}
+
+function E(position) {
+    var Ex = 0.0;
+    var Ey = 0.0;
+    var sign = 1;
+    for(var j = 0; j < particles.length; j++) {
+        var xdiff = position[0] - particles[j].position[0];
+        var ydiff = position[1] - particles[j].position[1];
+        
+        var distanceSquared = xdiff*xdiff + ydiff*ydiff;
+        var distance = Math.sqrt(distanceSquared);
+        
+        var rsq = distanceSquared;
+        
+        sign = -sign;
+        
+        Ex += particles[j].charge * xdiff / (distance * distanceSquared);
+        Ey += particles[j].charge * ydiff / (distance * distanceSquared);
+    }
+        
+    return [Ex, Ey];
+}
+
+var c=document.getElementById("myCanvas");
+var ctx=c.getContext("2d");
+
+    
+//var centerx = 200;
+//var centery = 200;
+var drawing = false;
+
+function redraw() {
+    needsRedraw = true;
+}
+
+function drawFieldLines() {
+    if(!needsRedraw) {
+        return;
+    }
+    console.log("Banana");
+    drawing = true;
+    ctx.clearRect(0, 0, c.width, c.height);
+    
+    // Restore the transform
+    ctx.restore();
+
+    // Testing
+    ctx.lineWidth = 8;
+
+    var x = 0.0;
+    var y = 0.0;
+    var radius = 5;
+    for(var j = 0; j < particles.length; j++) {
+        var xa = particles[j].position[0];
+        var ya = particles[j].position[1];
+        var opacity = Math.abs(particles[j].charge / minInitialCharge);
+        if(particles[j].charge > 0) {
+            ctx.fillStyle="rgba(255, 0, 0, " + opacity + ")";
+        } else {
+            ctx.fillStyle="rgba(0, 0, 255, " + opacity + ")";
+        }
+        ctx.beginPath();
+        ctx.arc(xa, ya, radius, 0, Math.PI*2, true); 
+        ctx.closePath();
+        ctx.fill();
+        //ctx.fillRect(xa - 5, ya - 5, 10, 10);
+        if(particles[j].charge < 0) {
+            continue;
+        }
+        for(var a = 0; a < nFieldLines; a++) {
+            x = xa + radius * Math.cos(a / nFieldLines * 2 * 3.14);
+            y = ya + radius * Math.sin(a / nFieldLines * 2 * 3.14);
+            ctx.beginPath();
+            ctx.moveTo(x,y);
+            for(var i = 0; i < nSteps; i++) {
+                var field = E([x,y]);
+                var stepx = field[0];
+                var stepy = field[1];
+                
+                var scale = stepLength * stepLength / (stepLength / 10000000000. + stepx * stepx + stepy * stepy);
+                
+                x = x + scale*stepx;
+                y = y + scale*stepy;
+                
+                ctx.lineTo(x,y);
+            }
+            //ctx.closePath();
+            ctx.lineWidth = 1;
+            ctx.strokeStyle="#000000";
+            ctx.stroke();
+        }
+    }
+    drawing = false;
+    needsRedraw = false;
+}
+
+var dragging = false;
+
+var dragX = 0;
+var dragY = 0;
+
+var dragStartX = 0;
+var dragStartY = 0;
+
+var draggingParticle = 0;
+
+function onMouseDown(e) {    
+    dragStartX = e.pageX;
+    dragStartY = e.pageY;
+    
+    
+    
+    for(var i = 0; i < particles.length; i++) {
+        var diffX = dragStartX - particles[i].position[0];
+        var diffY = dragStartY - particles[i].position[1];
+        
+        if((diffX*diffX + diffY*diffY) < 1000) {
+            draggingParticle = i;
+            dragging = true;
+            break;
+        }
+    }
+    return false;
+}
+
+function onMouseMove(e) {
+    if(!drawing) {
+        dragX = e.pageX;
+        dragY = e.pageY;
+        if(dragging) {
+            particles[draggingParticle].position[0] = dragX;
+            particles[draggingParticle].position[1] = dragY;
+            //drawFieldLines();
+            redraw();
+        }
+    }
+    return false;
+}
+
+function onMouseUp(e) {
+    e.ctrlKey;
+    
+    dragging = false;
+    
+    var theCharge = initialCharge;
+    if(e.ctrlKey) {
+        theCharge = -initialCharge;
+    }
+    
+    var diffX = dragStartX - dragX;
+    var diffY = dragStartY - dragY;
+    
+    if((diffX*diffX + diffY*diffY) < 100) {
+        particles[particles.length] = {
+            position: [dragX,dragY],
+            charge: theCharge
+        }
+        //drawFieldLines();
+        redraw();
+    }
+    return false;
+}
+
+// shim layer with setTimeout fallback
+window.requestAnimFrame = (function(){
+  return  window.requestAnimationFrame       || 
+          window.webkitRequestAnimationFrame || 
+          window.mozRequestAnimationFrame    || 
+          window.oRequestAnimationFrame      || 
+          window.msRequestAnimationFrame     || 
+          function( callback ){
+            window.setTimeout(callback, 1000 / 60);
+          };
+})();
+
+
+// usage: 
+// instead of setInterval(render, 16) ....
+
+(function animloop(){
+  requestAnimFrame(animloop);
+  drawFieldLines();
+})();
+// place the rAF *before* the render() to assure as close to 
+// 60fps with the setTimeout fallback.
+
+initialize();
+c.addEventListener('mousedown', onMouseDown, false);
+c.addEventListener('mousemove', onMouseMove, false);
+c.addEventListener('mouseup', onMouseUp, false);
+c.onselectstart = function () { return false; } // ie
+
+console.log("Done!");
+</script>
+
+</body>
+</html>
