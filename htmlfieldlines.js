@@ -73,6 +73,11 @@ function redraw() {
     needsRedraw = true;
 }
 
+function removeAll() {
+    particles.length = 0;
+    redraw();
+}
+
 function drawFieldLines() {
     if(!needsRedraw) {
         return;
