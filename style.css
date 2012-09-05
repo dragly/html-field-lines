@@ -1,0 +1,73 @@
+html, body {
+  width:  95%;
+  height: 95%;
+  margin: 0px;
+  font-family: 'Quattrocento', serif;
+  font-size: 14px;
+}
+
+a {
+    color: rgb(45, 120, 80);
+}
+
+h1 {
+    font-size: 46px;
+    margin-bottom: 0px;
+}
+
+h2 {
+    font-size: 18px;
+}
+
+#myCanvas {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+}
+
+#controllers {
+    position: absolute;
+    background-color: rgba(255,255,255,0.9);;
+    width: 200px;
+    height: 300px;
+
+    right: 0px;
+    top: 0px;
+
+    padding: 20px;
+    /*border: 1px solid rgba(0,0,0,0.4);*/
+}
+
+#copyleft {
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+
+    color: rgba(30,30,30,1);
+
+    background-color: rgba(255,255,255,0.5);
+
+    padding-right: 20px;
+}
+
+#title {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    padding-left: 20px;
+}
+
+#info {
+    position: absolute;
+    width: 400px;
+    height: 300px;
+
+    top: 150px;
+    left: 50px;
+
+    padding: 10px;
+
+    background: rgba(255,255,255,0.8);
+
+    display: none;
+}
